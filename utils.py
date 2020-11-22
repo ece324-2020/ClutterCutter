@@ -45,11 +45,12 @@ def load_df(path):
     columns = ['text', 'label']
     df = pd.DataFrame(columns=columns)
     for dir in os.listdir(path):
-        label = labels[dir]
-        data_path = os.path.join(path, dir, "text.tsv")
-        text_df = pd.read_csv(data_path, sep='\t')
-        text_df.insert(1, 'label', label) # Adds label based on directory name
-        df = pd.concat([df, text_df])
+        if dir != ".DS_Store":
+            label = labels[dir]
+            data_path = os.path.join(path, dir, "text.tsv")
+            text_df = pd.read_csv(data_path, sep='\t')
+            text_df.insert(1, 'label', label) # Adds label based on directory name
+            df = pd.concat([df, text_df])
     df = df.reset_index(drop=True)
     return df
 
