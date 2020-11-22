@@ -16,11 +16,12 @@ def reformat_txt(path):
 
         # Extract text from each file
         for file in os.listdir(os.path.join(path, dir)):
-            file_path = os.path.join(path, dir, file)
-            with open(file_path, 'r', encoding='utf8') as f:
-                content = f.read()
-                content.strip('\t') # removes tabs so content can be stored in tsv format.
-                text.append([content])
+            if file[-4:] == ".txt":
+                file_path = os.path.join(path, dir, file)
+                with open(file_path, 'r', encoding='utf8') as f:
+                    content = f.read()
+                    content.strip('\t') # removes tabs so content can be stored in tsv format.
+                    text.append([content])
 
         # Merge all text data into one tsv        
         with open(tsv_path, 'w', encoding='utf8') as f:
@@ -50,7 +51,7 @@ def load_df(path):
 
 # For testing purposes:
 if __name__ == "__main__":
-    data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data_test"
+    data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data"
     reformat_txt(data_path)
     test_df = load_df(data_path)
     test_df.to_csv(os.path.join(data_path, 'data.tsv'), sep='\t', index=False)
