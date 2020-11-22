@@ -1,68 +1,36 @@
 import torch
-import torch.optim as optim
-
-import torchtext
-from torchtext import data
-import spacy
-
-import argparse
-import os
-
-
-#from models import * #in separate models.py file
-
 import torch.nn as nn
-from torch.autograd import Variable
-import time
+import torch.optim as optim
+import torch.nn.functional as F
 
+import wandb
+
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
-#Hyperparameters 
-learning_rate = 0.01
-batch_size = 20
-epochs = 25
-seed = 0
+import os
 
-torch.manual_seed(seed)
+from utils import *
+from models import *
 
-#loss_fnc is set to CrossEntropyLoss
-
-# ------------------------------ BASELINE (FULL DATASET) ------------------------------ 
 def main():
-    # Instantiates 2 data.Field objects 
-    TEXT = data.Field(sequential=True,lower=True, tokenize='spacy', include_lengths=True)
-    LABELS = data.Field(sequential=False, use_vocab=False)
-    
-    # Load the train, validation, and test datasets to become datasets
-    train_data, val_data, test_data = data.TabularDataset.splits(
-            path='datawang/', train='train.tsv',
-            validation='validation.tsv', test='test.tsv', format='tsv',
-            skip_header=True, fields=[('text', TEXT), ('label', LABELS)])
-
-    # Create an object that can be enumerated (for training loop later)
-    train_iter, val_iter, test_iter = data.BucketIterator.splits(
-      (train_data, val_data, test_data), batch_sizes=(batch_size, batch_size, batch_size),
-    sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
-    
-    # Vocab object contains the index/token for each unique word in the dataset (looks through all sentences in dataset)
-    TEXT.build_vocab(train_data, val_data, test_data)
-
-    # Loading GloVe Vector and Using Embedding Layer
-    TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
-    vocab = TEXT.vocab
-
-    print("Shape of Vocab:",TEXT.vocab.vectors.shape) #number of unique words 
-    
-    # Training the baseline model --------------------
-    # Reproducability 
-    torch.manual_seed(seed)
+    # Data processing
+    reformat_txt(data_path)
+    pre_processing(data_path)
+    train_iter, val_iter, test_iter, vocab = make_iter(data_path, batch_size)
 
     # Initiate model 
-    model = Baseline(100,vocab) ### 
+    if network == 'baseline':
+        model = Baseline(embedding_dim, vocab) 
+    elif network =='rnn':
+        model = RNN(embedding_dim, vocab, hidden_dim)
+    else:
+        raise ValueError('Invalid network chosen')
     
     # Define loss and optimzer functions 
-    loss_fnc = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(),lr = learning_rate)
+    loss_fnc = nn.CrossEntropyLoss() 
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Store for plotting
     loss_list = []
@@ -72,88 +40,84 @@ def main():
     val_acc_list = []
     val_loss_list = []
 
-    # TRAINING LOOP --------------------
-    for e in range(epochs): 
-        nepoch = nepoch + [e]
+    # Training loop
+    for epoch in range(num_epochs): 
+        nepoch = nepoch + [epoch]
 
-        batchloss_accum = 0.0
-        batchacc_accum = 0.0
+        running_loss = 0.0
+        running_acc = 0.0
         model.train() 
+        
+        for i, batch in enumerate(train_iter):
 
-        # For batch in train_iter: #len train_iter is number of batches 
-        for i, batch in enumerate(train_iter, 0):
-            correct = 0 
-            total = 0 
-            
-            # Zero parameter gradients
             optimizer.zero_grad()
-            
-            # Run model on inputs
             batch_input, batch_input_length = batch.text
 
-            outputs = model(batch_input)
-            #print(batch.label.float().shape)
+            outputs = model(batch_input, batch_input_length)
             
             # Compute loss
-            batchloss = loss_fnc(outputs, batch.label) 
-            batchloss_accum = batchloss_accum + batchloss.item() #added values of loss for all batches
-            #print('batchloss',batchloss)
+            loss = loss_fnc(outputs, batch.label) 
+            running_loss += loss.item() 
             
-            batchloss.backward()
+            # Update gradients
+            loss.backward()
             optimizer.step()
             
             # Compute accuracy 
-            batchacc = accuracy(outputs,batch.label)
-            batchacc_accum = batchacc_accum + batchacc
-            #print("Batch accuracy",batchacc)
+            acc = accuracy(outputs,batch.label)
+            running_acc += acc
             
-            if i == len(train_iter)-1: #len(trainloader) is len(dataset)
-                model.eval()
-                vacc, vloss = evaluateBaseline(model,val_iter)
-                
-                
-                print("avg acc/epoch", batchacc_accum/len(train_iter))
-                print('[%d, %5d] avg loss/epoch: %.3f' % (e + 1, i + 1, batchloss_accum/len(train_iter)))
-                print("validation loss:", vloss)
-                print("validation acc:", vacc)
+        model.eval()
+        train_acc = running_acc/len(train_iter)
+        train_loss = running_loss/len(train_iter)
+        vacc, vloss = evaluate(model, val_iter)
+        
+        print(f"Epoch {epoch + 1}/{num_epochs}")
+        print("Average Loss: ", train_loss)
+        print("Average Accuracy:", train_acc)
+        print("Validation Loss: ", vloss)
+        print("Validation Accuracy: ", vacc)
 
-                loss_list = loss_list + [batchloss_accum/len(train_iter)]
-                acc_list = acc_list + [batchacc_accum/len(train_iter)]
-                val_acc_list.append(vacc)   
-                val_loss_list.append(vloss)
-
-                batchloss_accum = 0.0
-                batchacc_accum = 0.0 
+        loss_list.append(train_loss)
+        acc_list.append(train_acc)
+        val_acc_list.append(vacc)   
+        val_loss_list.append(vloss)
     
-    # Evaluate with test dataset
     model.eval()
-    tacc,tloss = evaluateBaseline(model,test_iter)
-    print(tacc,tloss)
+    tacc,tloss = evaluate(model, test_iter)
 
-    print("Final Test Acccuracy:", tacc)
+    print(f"Final Test Acccuracy: {tacc}")
+    print(f"Final Test Loss: {tloss}")
     
-    #LOSS TOGETHER
+    #Plot Losses
     plt.plot(nepoch,loss_list, label = 'Train')
     plt.plot(nepoch,val_loss_list, label = 'Valid')
     plt.xlabel("Epoch")
     plt.ylabel("Loss") 
-    plt.title("Training vs. Validation Loss Curve for full dataset")
+    plt.title("Training and Validation Loss")
     plt.legend(['Training', 'Validation'], loc='upper left')
     plt.show() 
 
-    #ACCURACIES TOGETHER
+    #Plot Accuracies
     plt.plot(nepoch,acc_list, label = 'Train')
     plt.plot(nepoch,val_acc_list, label = 'Validation')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy") 
-    plt.title("Training vs. Validation Accuracy Curve for full dataset")
+    plt.title("Training and Validation Accuracy")
     plt.legend(['Training', 'Validation'], loc='upper left')
     plt.show() 
-    
-    #torch.save(model,'models/model_baseline.pt')
-
 
 if __name__ == '__main__':
+    torch.manual_seed(0)
+    # Move to config object/file!
+    data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data"
+    batch_size = 20
+    learning_rate = 0.01
+    num_epochs = 10
+    embedding_dim = 100
+    hidden_dim = 100
+    network = 'rnn'
+
     main()
 
 
