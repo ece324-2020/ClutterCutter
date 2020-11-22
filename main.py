@@ -14,6 +14,8 @@ import os
 from utils import *
 from models import *
 
+from torchtext.vocab import FastText
+
 def main():
     # Data processing
     reformat_txt(data_path)
@@ -114,9 +116,12 @@ if __name__ == '__main__':
     batch_size = 20
     learning_rate = 0.01
     num_epochs = 10
-    embedding_dim = 100
+    embedding_dim = 100  # (100 for GloVe, 300 for FastText)
     hidden_dim = 100
     network = 'rnn'
+    
+    embedding = FastText('simple')
+
 
     main()
 
