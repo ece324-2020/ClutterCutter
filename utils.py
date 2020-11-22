@@ -134,6 +134,51 @@ def evaluateRNN(model, data_iter):
     
     return avgbatchacc, avgbatchloss
 
+##################
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+
+data = pd.read_csv('datawang/data.tsv',sep="\t") #load into DataFrame type 
+#print(data)
+#print(data.iloc[1867])
+
+x_tot = data["text"]
+y_tot = data ["label"]
+
+#Splitting data into train (0.64), test (0.2), validation (0.16)
+x, x_test, y, y_test = train_test_split(x_tot,y_tot,test_size=0.2,train_size=0.8, random_state = 0, stratify = y_tot) # 0.8 = train + validation)
+x_train, x_val, y_train, y_val = train_test_split(x,y,test_size = 0.2, random_state = 0, stratify = y) #0.2 x 0.8 = 0.16 validation
+
+print("Total examples in test", x_test.shape)
+print("Total examples in train", x_train.shape)
+print("Total examples in validation", x_val.shape)
+
+test = y_test.value_counts()
+train = y_train.value_counts()
+val = y_val.value_counts()
+
+print("\nTEST: Ex. in each class\n", test)
+print("\nTRAIN: Ex. in each class\n", train)
+print("\nVALIDATION: Ex. in each class\n", val)
+
+#Concatenate text and labels & load into tsv files 
+testdata = pd.concat([x_test, y_test],axis = 1)
+testdata.to_csv("datawang/test.tsv", sep="\t",index=False)
+
+traindata = pd.concat([x_train, y_train],axis = 1)
+traindata.to_csv("datawang/train.tsv", sep="\t",index=False)
+
+valdata = pd.concat([x_val, y_val],axis = 1)
+valdata.to_csv("datawang/validation.tsv", sep="\t",index=False)
+
+#Create 4th dataset (overfit) for debugging (randomly taken from traindata)
+overfit = traindata.groupby('label', group_keys=False).apply(lambda x: x.sample(25))
+overfit.to_csv("datawang/overfit.tsv", sep="\t",index=False)
+
+##################
+
 
 # For testing purposes:
 if __name__ == "__main__":
