@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import csv
 from sklearn.model_selection import train_test_split
-import string
 
 def reformat_txt(path):
     """
