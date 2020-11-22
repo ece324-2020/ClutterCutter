@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import csv
 from sklearn.model_selection import train_test_split
+import string
 
 def reformat_txt(path):
     """
@@ -56,28 +57,16 @@ def load_df(path):
     df = df.reset_index(drop=True)
     return df
 
-# Accuracy function (for both models)
-def accuracy(predictions, labels):
-    """
-    Called in training loop (on training data), evaluate function (on evaluation data)
-    Called after training loop on evaluate function (on test data)
-    Returns decimal accuracy (0.0 - 1.0)
-    """
-    correct = 0
-    ind = 0 
-    for c in predictions:
-        if (c.item()>0.5):
-            r = 1.0
-        else:
-            r = 0.0
-        
-        if (r== labels[ind].item()):
-            correct += 1
-        ind += 1
-    return (correct/len(labels))
+def strip(df):
+    punct = '!#$%&"\'()*+,-./:;<=>?@[\\]^_`{}~'
+    punc_table = str.maketrans(dict.fromkeys(punct, ' '))
+    df['text'] = '|'.join(df['text'].tolist()).translate(punc_table).split('|') # replaces all punctuation with spaces
+    df['text'] = df['text'].str.replace('\n', ' ') # remove new lines
+    return df
 
 def pre_processing(path):
     data = load_df(path) # Load labelled dataframe
+    data = strip(data) # Remove 
 
     x_tot = data["text"]
     y_tot = data ["label"]
@@ -108,6 +97,25 @@ def pre_processing(path):
     overfit = traindata.groupby('label', group_keys=False).apply(lambda x: x.sample(10))
     overfit.to_csv(os.path.join(path, "overfit.tsv"), sep="\t",index=False)
 
+# Accuracy function (for both models)
+def accuracy(predictions, labels):
+    """
+    Called in training loop (on training data), evaluate function (on evaluation data)
+    Called after training loop on evaluate function (on test data)
+    Returns decimal accuracy (0.0 - 1.0)
+    """
+    correct = 0
+    ind = 0 
+    for c in predictions:
+        if (c.item()>0.5):
+            r = 1.0
+        else:
+            r = 0.0
+        
+        if (r== labels[ind].item()):
+            correct += 1
+        ind += 1
+    return (correct/len(labels))
 
 # Evalutation function for baseline 
 def evaluateBaseline(model, data_iter):
