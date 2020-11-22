@@ -58,9 +58,7 @@ def load_df(path):
     return df
 
 def strip(df):
-    punct = '!#$%&"\'()*+,-./:;<=>?@[\\]^_`{}~'
-    punc_table = str.maketrans(dict.fromkeys(punct, ' '))
-    df['text'] = '|'.join(df['text'].tolist()).translate(punc_table).split('|') # replaces all punctuation with spaces
+    df['text'] = df['text'].str.replace(r'[^\w\s]+', ' ') # replaces all punctuation with spaces
     df['text'] = df['text'].str.replace('\n', ' ') # remove new lines
     return df
 
