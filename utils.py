@@ -5,21 +5,20 @@ from sklearn.model_selection import train_test_split
 import string
 import re 
 
-def decontracted(phrase):
+def decontracted(df):
     # specific
-    phrase = re.sub(r"won\'t", "will not", phrase)
-    phrase = re.sub(r"can\'t", "can not", phrase)
+    df['text'] = df['text'].str.replace('won\'t', 'will not')
+    df['text'] = df['text'].str.replace('can\'t', 'can not')
 
     # general
-    phrase = re.sub(r"n\'t", " not", phrase)
-    phrase = re.sub(r"\'re", " are", phrase)
-    phrase = re.sub(r"\'s", " is", phrase)
-    phrase = re.sub(r"\'d", " would", phrase)
-    phrase = re.sub(r"\'ll", " will", phrase)
-    phrase = re.sub(r"\'t", " not", phrase)
-    phrase = re.sub(r"\'ve", " have", phrase)
-    phrase = re.sub(r"\'m", " am", phrase)
-    return phrase
+    df['text'] = df['text'].str.replace('\'t', ' not')
+    df['text'] = df['text'].str.replace('\'re', ' are')
+    df['text'] = df['text'].str.replace('\'s', ' is')
+    df['text'] = df['text'].str.replace('\'d', ' would')
+    df['text'] = df['text'].str.replace('\'ll', ' will')
+    df['text'] = df['text'].str.replace('\'ve', ' have')
+    df['text'] = df['text'].str.replace('\'m', ' am')
+    return df
 
 def reformat_txt(path):
     """
@@ -81,6 +80,7 @@ def strip(df):
 
 def pre_processing(path):
     data = load_df(path) # Load labelled dataframe
+    data = decontracted(data)
     data = strip(data) # Remove 
 
     x_tot = data["text"]
