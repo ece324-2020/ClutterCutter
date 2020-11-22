@@ -1,40 +1,30 @@
 # ------------------------------ BASELINE (FULL DATASET) ------------------------------ 
 def main():
-    ######
-    # 3.2 Processing of the data
-    # the code below assumes you have processed and split the data into
-    # the three files, train.tsv, validation.tsv and test.tsv
-    # and those files reside in the folder named "data".
-    ######
-
-    # 3.2.1 
     # Instantiates 2 data.Field objects 
     TEXT = data.Field(sequential=True,lower=True, tokenize='spacy', include_lengths=True)
     LABELS = data.Field(sequential=False, use_vocab=False)
-
-    # 3.2.2
+    
     # Load the train, validation, and test datasets to become datasets
     train_data, val_data, test_data = data.TabularDataset.splits(
             path='datawang/', train='train.tsv',
             validation='validation.tsv', test='test.tsv', format='tsv',
             skip_header=True, fields=[('text', TEXT), ('label', LABELS)])
 
-    # 3.2.3
     # Create an object that can be enumerated (for training loop later)
     train_iter, val_iter, test_iter = data.BucketIterator.splits(
       (train_data, val_data, test_data), batch_sizes=(batch_size, batch_size, batch_size),
     sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
     
-    # 3.2.4 Vocab object contains the index/token for each unique word in the dataset (looks through all sentences in dataset)
+    # Vocab object contains the index/token for each unique word in the dataset (looks through all sentences in dataset)
     TEXT.build_vocab(train_data, val_data, test_data)
 
-    # 4.1 Loading GloVe Vector and Using Embedding Layer
+    # Loading GloVe Vector and Using Embedding Layer
     TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
     vocab = TEXT.vocab
 
     print("Shape of Vocab:",TEXT.vocab.vectors.shape) #number of unique words 
     
-    # 4.3 Training the baseline model --------------------
+    # Training the baseline model --------------------
     # Reproducability 
     torch.manual_seed(seed)
 
@@ -43,9 +33,7 @@ def main():
     
     # Define loss and optimzer functions 
     loss_fnc = nn.CrossEntropyLoss()# Convert labels to one-hot to calculate loss 
-    #labels_oh = F.one_hot(labels,10)()
     optimizer = torch.optim.Adam(model.parameters(),lr = learning_rate)
-
 
     # Store for plotting
     loss_list = []
@@ -55,7 +43,7 @@ def main():
     val_acc_list = []
     val_loss_list = []
 
-    #TRAINING LOOP --------------------
+    # TRAINING LOOP --------------------
     for e in range(epochs): 
         nepoch = nepoch + [e]
 
@@ -72,15 +60,13 @@ def main():
             optimizer.zero_grad()
             
             # Run model on inputs
-            #print(batch.text)#(batch input = sentence, batch input length = 15s --> tuple of 2 tensors)
             batch_input, batch_input_length = batch.text
 
             outputs = model(batch_input)
-            print(outputs.shape)
             #print(batch.label.float().shape)
             
             # Compute loss
-            batchloss = loss_fnc(outputs, batch.label) #(batch.label) (tensor of 64 1s and 0s)
+            batchloss = loss_fnc(outputs, batch.label) 
             batchloss_accum = batchloss_accum + batchloss.item() #added values of loss for all batches
             #print('batchloss',batchloss)
             
