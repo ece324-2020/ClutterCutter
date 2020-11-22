@@ -80,7 +80,7 @@ def strip(df):
 
 def pre_processing(path):
     data = load_df(path) # Load labelled dataframe
-    data = decontracted(data)
+    data = decontracted(data) # Decontract
     data = strip(data) # Remove 
 
     x_tot = data["text"]
