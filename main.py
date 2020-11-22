@@ -119,9 +119,6 @@ if __name__ == '__main__':
     embedding_dim = 100  # (100 for GloVe, 300 for FastText)
     hidden_dim = 100
     network = 'rnn'
-    
-    embedding = FastText('simple')
-
 
     main()
 
