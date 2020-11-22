@@ -101,18 +101,16 @@ def accuracy(predictions, labels):
     Called after training loop on evaluate function (on test data)
     Returns decimal accuracy (0.0 - 1.0)
     """
-    correct = 0
-    ind = 0 
-    for c in predictions:
-        if (c.item()>0.5):
-            r = 1.0
-        else:
-            r = 0.0
-        
-        if (r== labels[ind].item()):
-            correct += 1
-        ind += 1
-    return (correct/len(labels))
+    correct = 0 
+    total = 0
+    
+    _, predicted = torch.max(predictions,1) #finds max, returns index of max (predicted label)
+    total = total + len(labels) #can probably change to just len(labels) later
+    correct = correct + (predicted.float() == labels).sum() 
+
+
+    batchacc = correct.item() / total
+    return batchacc
 
 # Evalutation function for baseline 
 def evaluateBaseline(model, data_iter):
@@ -120,8 +118,9 @@ def evaluateBaseline(model, data_iter):
     Called in training loop (on evaluation data)
     Called after training loop (on test data) 
     Returns decimal accuracy (0.0 - 1.0) and loss 
+    
     """
-    loss_fnc = nn.BCEWithLogitsLoss()
+    loss_fnc = nn.CrossEntropyLoss()
     correct = 0 
     
     batchloss_accum = 0.0
@@ -134,21 +133,22 @@ def evaluateBaseline(model, data_iter):
         outputs = model(torch.reshape(batch_input,(sentence_length,len(batch)))) #batch has size [sentence length, batch size] <-- probably will need adjustment
         
         #Calculate accuracy 
-        acc = accuracy(outputs,batch.label.float())
+        acc = accuracy(outputs,batch.label)
         batchacc_accum = batchacc_accum + acc
         
         #Calculate loss
-        batchloss = loss_fnc(outputs, batch.label.float()) #(batch.label) (tensor of 64 1s and 0s)
+        batchloss = loss_fnc(outputs, batch.label) #(batch.label) (tensor of 64 1s and 0s)
         batchloss_accum = batchloss_accum + batchloss.item()
 
     avgbatchloss = batchloss_accum/len(data_iter)
     avgbatchacc = batchacc_accum/len(data_iter)
+    
     return avgbatchacc, avgbatchloss
 
 # Modified evaluation function for the RNN (changed to make model take in length too)
 def evaluateRNN(model, data_iter):
     
-    loss_fnc = nn.BCEWithLogitsLoss()
+    loss_fnc = nn.CrossEntropyLoss()
     correct = 0    
     
     batchloss_accum = 0.0
@@ -161,11 +161,11 @@ def evaluateRNN(model, data_iter):
         outputs = model(batch_input,batch_input_length) #batch_input has size [sentence length, batch size]
         
         #Calculate accuracy 
-        acc = accuracy(outputs,batch.label.float())
+        acc = accuracy(outputs,batch.label)
         batchacc_accum = batchacc_accum + acc
         
         #Calculate loss
-        batchloss = loss_fnc(outputs, batch.label.float()) 
+        batchloss = loss_fnc(outputs, batch.label) 
         batchloss_accum = batchloss_accum + batchloss.item()
 
     avgbatchloss = batchloss_accum/len(data_iter)
