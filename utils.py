@@ -7,21 +7,22 @@ def reformat_txt(path):
     Combines text files for each data label under one tsv file.
     """
     for dir in os.listdir(path):
-        text = []
-        tsv_path = os.path.join(path, dir, "text.tsv")
+        if dir != ".DS_Store":
+            text = []
+            tsv_path = os.path.join(path, dir, "text.tsv")
 
-        # remove previous copy of tsv
-        if os.path.exists(tsv_path):
-            os.remove(tsv_path)
+            # remove previous copy of tsv
+            if os.path.exists(tsv_path):
+                os.remove(tsv_path)
 
-        # Extract text from each file
-        for file in os.listdir(os.path.join(path, dir)):
-            if file[-4:] == ".txt":
-                file_path = os.path.join(path, dir, file)
-                with open(file_path, 'r', encoding='utf8') as f:
-                    content = f.read()
-                    content.strip('\t') # removes tabs so content can be stored in tsv format.
-                    text.append([content])
+            # Extract text from each file
+            for file in os.listdir(os.path.join(path, dir)):
+                if file[-4:] == ".txt":
+                    file_path = os.path.join(path, dir, file)
+                    with open(file_path, 'r', encoding='utf8') as f:
+                        content = f.read()
+                        content.strip('\t') # removes tabs so content can be stored in tsv format.
+                        text.append([content])
 
         # Merge all text data into one tsv        
         with open(tsv_path, 'w', encoding='utf8') as f:
