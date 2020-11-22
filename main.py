@@ -25,6 +25,8 @@ seed = 0
 
 torch.manual_seed(seed)
 
+#loss_fnc is set to CrossEntropyLoss
+
 # ------------------------------ BASELINE (FULL DATASET) ------------------------------ 
 def main():
     # Instantiates 2 data.Field objects 
@@ -59,7 +61,7 @@ def main():
     model = Baseline(100,vocab) ### 
     
     # Define loss and optimzer functions 
-    loss_fnc = nn.CrossEntropyLoss()# Convert labels to one-hot to calculate loss 
+    loss_fnc = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(),lr = learning_rate)
 
     # Store for plotting
