@@ -1,13 +1,15 @@
 import os
 import pandas as pd
 import csv
+from sklearn.model_selection import train_test_split
 
 def reformat_txt(path):
     """
     Combines text files for each data label under one tsv file.
     """
     for dir in os.listdir(path):
-        if dir == "data.tsv":
+        # remove previous copy
+        if dir[-3:] == "tsv":
             os.remove(os.path.join(path, dir))
 
         elif dir != ".DS_Store":
@@ -56,11 +58,11 @@ def load_df(path):
 
 # Accuracy function (for both models)
 def accuracy(predictions, labels):
-"""
-Called in training loop (on training data), evaluate function (on evaluation data)
-Called after training loop on evaluate function (on test data)
-Returns decimal accuracy (0.0 - 1.0)
-"""
+    """
+    Called in training loop (on training data), evaluate function (on evaluation data)
+    Called after training loop on evaluate function (on test data)
+    Returns decimal accuracy (0.0 - 1.0)
+    """
     correct = 0
     ind = 0 
     for c in predictions:
@@ -74,13 +76,45 @@ Returns decimal accuracy (0.0 - 1.0)
         ind += 1
     return (correct/len(labels))
 
+def pre_processing(path):
+    data = load_df(path) # Load labelled dataframe
+
+    x_tot = data["text"]
+    y_tot = data ["label"]
+
+    #Splitting data into train (0.64), test (0.20), validation (0.16)
+    x, x_test, y, y_test = train_test_split(x_tot,y_tot,test_size=0.2, train_size=0.8, random_state = 0, stratify = y_tot) # 0.8 = train + validation)
+    x_train, x_val, y_train, y_val = train_test_split(x,y,test_size = 0.2, random_state = 0, stratify = y) # 0.2 x 0.8 = 0.16 validation
+
+    print("Total examples in test", x_test.shape)
+    print("Total examples in train", x_train.shape)
+    print("Total examples in validation", x_val.shape)
+
+    print("\nTEST: Examples in each class\n", y_test.value_counts())
+    print("\nTRAIN: Examples in each class\n", y_train.value_counts())
+    print("\nVALIDATION: Examples in each class\n", y_val.value_counts())
+
+    #Concatenate text and labels & load into tsv files 
+    testdata = pd.concat([x_test, y_test], axis = 1)
+    testdata.to_csv(os.path.join(path, "test.tsv"), sep="\t",index=False)
+
+    traindata = pd.concat([x_train, y_train], axis = 1)
+    traindata.to_csv(os.path.join(path, "train.tsv"), sep="\t",index=False)
+
+    valdata = pd.concat([x_val, y_val], axis = 1)
+    valdata.to_csv(os.path.join(path, "validation.tsv"), sep="\t",index=False)
+
+    #Create 4th dataset (overfit) for debugging (pulls 10 samples per label to create a 50 sample dataset)
+    overfit = traindata.groupby('label', group_keys=False).apply(lambda x: x.sample(10))
+    overfit.to_csv(os.path.join(path, "overfit.tsv"), sep="\t",index=False)
+
+
 # Evalutation function for baseline 
 def evaluateBaseline(model, data_iter):
     """
     Called in training loop (on evaluation data)
     Called after training loop (on test data) 
     Returns decimal accuracy (0.0 - 1.0) and loss 
-    
     """
     loss_fnc = nn.BCEWithLogitsLoss()
     correct = 0 
@@ -134,55 +168,9 @@ def evaluateRNN(model, data_iter):
     
     return avgbatchacc, avgbatchloss
 
-##################
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-
-
-data = pd.read_csv('datawang/data.tsv',sep="\t") #load into DataFrame type 
-#print(data)
-#print(data.iloc[1867])
-
-x_tot = data["text"]
-y_tot = data ["label"]
-
-#Splitting data into train (0.64), test (0.2), validation (0.16)
-x, x_test, y, y_test = train_test_split(x_tot,y_tot,test_size=0.2,train_size=0.8, random_state = 0, stratify = y_tot) # 0.8 = train + validation)
-x_train, x_val, y_train, y_val = train_test_split(x,y,test_size = 0.2, random_state = 0, stratify = y) #0.2 x 0.8 = 0.16 validation
-
-print("Total examples in test", x_test.shape)
-print("Total examples in train", x_train.shape)
-print("Total examples in validation", x_val.shape)
-
-test = y_test.value_counts()
-train = y_train.value_counts()
-val = y_val.value_counts()
-
-print("\nTEST: Ex. in each class\n", test)
-print("\nTRAIN: Ex. in each class\n", train)
-print("\nVALIDATION: Ex. in each class\n", val)
-
-#Concatenate text and labels & load into tsv files 
-testdata = pd.concat([x_test, y_test],axis = 1)
-testdata.to_csv("datawang/test.tsv", sep="\t",index=False)
-
-traindata = pd.concat([x_train, y_train],axis = 1)
-traindata.to_csv("datawang/train.tsv", sep="\t",index=False)
-
-valdata = pd.concat([x_val, y_val],axis = 1)
-valdata.to_csv("datawang/validation.tsv", sep="\t",index=False)
-
-#Create 4th dataset (overfit) for debugging (randomly taken from traindata)
-overfit = traindata.groupby('label', group_keys=False).apply(lambda x: x.sample(25))
-overfit.to_csv("datawang/overfit.tsv", sep="\t",index=False)
-
-##################
-
 
 # For testing purposes:
 if __name__ == "__main__":
     data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data"
     reformat_txt(data_path)
-    test_df = load_df(data_path)
-    test_df.to_csv(os.path.join(data_path, 'data.tsv'), sep='\t', index=False)
+    pre_processing(data_path)
