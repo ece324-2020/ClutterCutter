@@ -135,8 +135,10 @@ def make_iter(path, batch_size):
     sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
     
     TEXT.build_vocab(train_data, val_data, test_data)
+    #TEXT.build_vocab(train_data, val_data, test_data, vectors='fasttext.simple.300d') if we use FastText 
 
-    TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
+    TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100)) # Get rid of this line for FastText 
+
     vocab = TEXT.vocab
 
     print("Shape of Vocab:",TEXT.vocab.vectors.shape) 
