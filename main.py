@@ -1,57 +1,40 @@
-import torch
-import torch.optim as optim
-
-import torchtext
-from torchtext import data
-import spacy
-
-import argparse
-import os
-
-
-from models import * #in separate models.py file
-
-import torch.nn as nn
-from torch.autograd import Variable
-import time
-
-import matplotlib.pyplot as plt
-
-#Hyperparameters 
-learning_rate = 0.001
-batch_size = 64
-epochs = 25 
-seed = 0
-
-torch.manual_seed(seed)
-
+# ------------------------------ BASELINE (FULL DATASET) ------------------------------ 
 def main():
+    ######
+    # 3.2 Processing of the data
+    # the code below assumes you have processed and split the data into
+    # the three files, train.tsv, validation.tsv and test.tsv
+    # and those files reside in the folder named "data".
+    ######
+
+    # 3.2.1 
     # Instantiates 2 data.Field objects 
     TEXT = data.Field(sequential=True,lower=True, tokenize='spacy', include_lengths=True)
     LABELS = data.Field(sequential=False, use_vocab=False)
 
+    # 3.2.2
     # Load the train, validation, and test datasets to become datasets
     train_data, val_data, test_data = data.TabularDataset.splits(
             path='datawang/', train='train.tsv',
             validation='validation.tsv', test='test.tsv', format='tsv',
             skip_header=True, fields=[('text', TEXT), ('label', LABELS)])
 
+    # 3.2.3
     # Create an object that can be enumerated (for training loop later)
     train_iter, val_iter, test_iter = data.BucketIterator.splits(
       (train_data, val_data, test_data), batch_sizes=(batch_size, batch_size, batch_size),
     sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
     
-    # Vocab object contains the index/token for each unique word in the dataset (looks through all sentences in dataset)
+    # 3.2.4 Vocab object contains the index/token for each unique word in the dataset (looks through all sentences in dataset)
     TEXT.build_vocab(train_data, val_data, test_data)
 
-    # Loading GloVe Vector and Using Embedding Layer
+    # 4.1 Loading GloVe Vector and Using Embedding Layer
     TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
     vocab = TEXT.vocab
 
     print("Shape of Vocab:",TEXT.vocab.vectors.shape) #number of unique words 
     
-    # Training the baseline model --------------------
-    
+    # 4.3 Training the baseline model --------------------
     # Reproducability 
     torch.manual_seed(seed)
 
@@ -59,7 +42,8 @@ def main():
     model = Baseline(100,vocab) ### 
     
     # Define loss and optimzer functions 
-    loss_fnc = nn.BCEWithLogitsLoss()
+    loss_fnc = nn.CrossEntropyLoss()# Convert labels to one-hot to calculate loss 
+    #labels_oh = F.one_hot(labels,10)()
     optimizer = torch.optim.Adam(model.parameters(),lr = learning_rate)
 
 
@@ -88,29 +72,29 @@ def main():
             optimizer.zero_grad()
             
             # Run model on inputs
-            # print(batch.text)#(batch input = sentence, batch input length = 15s --> tuple of 2 tensors)
+            #print(batch.text)#(batch input = sentence, batch input length = 15s --> tuple of 2 tensors)
             batch_input, batch_input_length = batch.text
 
             outputs = model(batch_input)
-            # print(outputs.shape)
-            # print(batch.label.float().shape)
+            print(outputs.shape)
+            #print(batch.label.float().shape)
             
             # Compute loss
-            batchloss = loss_fnc(outputs, batch.label.float()) 
+            batchloss = loss_fnc(outputs, batch.label) #(batch.label) (tensor of 64 1s and 0s)
             batchloss_accum = batchloss_accum + batchloss.item() #added values of loss for all batches
-            # print('batchloss',batchloss)
+            #print('batchloss',batchloss)
             
             batchloss.backward()
             optimizer.step()
             
             # Compute accuracy 
-            batchacc = accuracy(outputs,batch.label.float())
+            batchacc = accuracy(outputs,batch.label)
             batchacc_accum = batchacc_accum + batchacc
-            # print("Batch accuracy",batchacc)
+            #print("Batch accuracy",batchacc)
             
-            if i == len(train_iter)-1: #len(train_iter) is len(dataset)
+            if i == len(train_iter)-1: #len(trainloader) is len(dataset)
                 model.eval()
-                vacc, vloss = evaluate(model,val_iter)
+                vacc, vloss = evaluateBaseline(model,val_iter)
                 
                 
                 print("avg acc/epoch", batchacc_accum/len(train_iter))
@@ -128,12 +112,12 @@ def main():
     
     # Evaluate with test dataset
     model.eval()
-    tacc,tloss = evaluate(model,test_iter)
+    tacc,tloss = evaluateBaseline(model,test_iter)
     print(tacc,tloss)
 
     print("Final Test Acccuracy:", tacc)
     
-    # LOSS TOGETHER
+    #LOSS TOGETHER
     plt.plot(nepoch,loss_list, label = 'Train')
     plt.plot(nepoch,val_loss_list, label = 'Valid')
     plt.xlabel("Epoch")
@@ -142,7 +126,7 @@ def main():
     plt.legend(['Training', 'Validation'], loc='upper left')
     plt.show() 
 
-    # ACCURACIES TOGETHER
+    #ACCURACIES TOGETHER
     plt.plot(nepoch,acc_list, label = 'Train')
     plt.plot(nepoch,val_acc_list, label = 'Validation')
     plt.xlabel("Epoch")
@@ -151,10 +135,11 @@ def main():
     plt.legend(['Training', 'Validation'], loc='upper left')
     plt.show() 
     
-    # torch.save(model,'models/model_baseline.pt')
+    #torch.save(model,'models/model_baseline.pt')
 
 
 if __name__ == '__main__':
     main()
+
 
 
