@@ -1,7 +1,15 @@
-import os
+import torch
+import torch.nn as nn
+
+import torchtext
+from torchtext import data
+import spacy
+
 import pandas as pd
 import csv
 from sklearn.model_selection import train_test_split
+
+import os
 
 def reformat_txt(path):
     """
@@ -94,6 +102,30 @@ def pre_processing(path):
     overfit = traindata.groupby('label', group_keys=False).apply(lambda x: x.sample(10))
     overfit.to_csv(os.path.join(path, "overfit.tsv"), sep="\t",index=False)
 
+def make_iter(path, batch_size):
+    """
+    Creates iterators and makes a vocab object.
+    """
+    TEXT = data.Field(sequential=True, lower=True, tokenize='spacy', include_lengths=True)
+    LABELS = data.Field(sequential=False, use_vocab=False)
+
+    train_data, val_data, test_data = data.TabularDataset.splits(
+            path=path, train='train.tsv',
+            validation='validation.tsv', test='test.tsv', format='tsv',
+            skip_header=True, fields=[('text', TEXT), ('label', LABELS)])
+
+    train_iter, val_iter, test_iter = data.BucketIterator.splits(
+      (train_data, val_data, test_data), batch_sizes=(batch_size, batch_size, batch_size),
+    sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
+    
+    TEXT.build_vocab(train_data, val_data, test_data)
+
+    TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
+    vocab = TEXT.vocab
+
+    print("Shape of Vocab:",TEXT.vocab.vectors.shape) 
+    return train_iter, val_iter, test_iter, vocab
+
 # Accuracy function (for both models)
 def accuracy(predictions, labels):
     """
@@ -108,46 +140,16 @@ def accuracy(predictions, labels):
     total = total + len(labels) #can probably change to just len(labels) later
     correct = correct + (predicted.float() == labels).sum() 
 
-
     batchacc = correct.item() / total
     return batchacc
 
-# Evalutation function for baseline 
-def evaluateBaseline(model, data_iter):
+def evaluate(model, data_iter):
     """
     Called in training loop (on evaluation data)
     Called after training loop (on test data) 
     Returns decimal accuracy (0.0 - 1.0) and loss 
     
     """
-    loss_fnc = nn.CrossEntropyLoss()
-    correct = 0 
-    
-    batchloss_accum = 0.0
-    batchacc_accum = 0.0
-    
-    for i,batch in enumerate(data_iter,0): # go through each batch in data_iter
-        batch_input, batch_input_length = batch.text
-        sentence_length = batch_input_length[0].item() # = len(batch_input)
-        
-        outputs = model(torch.reshape(batch_input,(sentence_length,len(batch)))) #batch has size [sentence length, batch size] <-- probably will need adjustment
-        
-        #Calculate accuracy 
-        acc = accuracy(outputs,batch.label)
-        batchacc_accum = batchacc_accum + acc
-        
-        #Calculate loss
-        batchloss = loss_fnc(outputs, batch.label) #(batch.label) (tensor of 64 1s and 0s)
-        batchloss_accum = batchloss_accum + batchloss.item()
-
-    avgbatchloss = batchloss_accum/len(data_iter)
-    avgbatchacc = batchacc_accum/len(data_iter)
-    
-    return avgbatchacc, avgbatchloss
-
-# Modified evaluation function for the RNN (changed to make model take in length too)
-def evaluateRNN(model, data_iter):
-    
     loss_fnc = nn.CrossEntropyLoss()
     correct = 0    
     
@@ -156,12 +158,10 @@ def evaluateRNN(model, data_iter):
     
     for i,batch in enumerate(data_iter,0): # Go through each batch in data_iter
         batch_input, batch_input_length = batch.text
-        sentence_length = batch_input_length[0].item() # = len(batch_input)
-  
-        outputs = model(batch_input,batch_input_length) #batch_input has size [sentence length, batch size]
+        outputs = model(batch_input, batch_input_length)
         
-        #Calculate accuracy 
-        acc = accuracy(outputs,batch.label)
+        #Calculate accuracy
+        acc = accuracy(outputs, batch.label)
         batchacc_accum = batchacc_accum + acc
         
         #Calculate loss
@@ -172,10 +172,4 @@ def evaluateRNN(model, data_iter):
     avgbatchacc = batchacc_accum/len(data_iter)
     
     return avgbatchacc, avgbatchloss
-
-
-# For testing purposes:
-if __name__ == "__main__":
-    data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data"
-    reformat_txt(data_path)
-    pre_processing(data_path)
+    
