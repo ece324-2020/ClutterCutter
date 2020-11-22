@@ -4,12 +4,27 @@ import torch.nn as nn
 import torchtext
 from torchtext import data
 import spacy
-
+import os
 import pandas as pd
 import csv
 from sklearn.model_selection import train_test_split
+import string
+import re 
 
-import os
+def decontracted(df):
+    # specific
+    df['text'] = df['text'].str.replace('won\'t', 'will not')
+    df['text'] = df['text'].str.replace('can\'t', 'can not')
+
+    # general
+    df['text'] = df['text'].str.replace('\'t', ' not')
+    df['text'] = df['text'].str.replace('\'re', ' are')
+    df['text'] = df['text'].str.replace('\'s', ' is')
+    df['text'] = df['text'].str.replace('\'d', ' would')
+    df['text'] = df['text'].str.replace('\'ll', ' will')
+    df['text'] = df['text'].str.replace('\'ve', ' have')
+    df['text'] = df['text'].str.replace('\'m', ' am')
+    return df
 
 def reformat_txt(path):
     """
@@ -71,6 +86,7 @@ def strip(df):
 
 def pre_processing(path):
     data = load_df(path) # Load labelled dataframe
+    data = decontracted(data) # Decontract
     data = strip(data) # Remove 
 
     x_tot = data["text"]
