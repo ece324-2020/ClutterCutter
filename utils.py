@@ -7,7 +7,10 @@ def reformat_txt(path):
     Combines text files for each data label under one tsv file.
     """
     for dir in os.listdir(path):
-        if dir != ".DS_Store":
+        if dir == "data.tsv":
+            os.remove(os.path.join(path, dir))
+
+        elif dir != ".DS_Store":
             text = []
             tsv_path = os.path.join(path, dir, "text.tsv")
 
