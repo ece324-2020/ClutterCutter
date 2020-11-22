@@ -1,3 +1,30 @@
+import torch
+import torch.optim as optim
+
+import torchtext
+from torchtext import data
+import spacy
+
+import argparse
+import os
+
+
+#from models import * #in separate models.py file
+
+import torch.nn as nn
+from torch.autograd import Variable
+import time
+
+import matplotlib.pyplot as plt
+
+#Hyperparameters 
+learning_rate = 0.01
+batch_size = 20
+epochs = 25
+seed = 0
+
+torch.manual_seed(seed)
+
 # ------------------------------ BASELINE (FULL DATASET) ------------------------------ 
 def main():
     # Instantiates 2 data.Field objects 
