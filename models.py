@@ -30,5 +30,6 @@ class RNN(nn.Module):
         embedded = self.embedding(x) # embedded = [sentence_length, batch_size, embedding_dim]
         pack_embedded = nn.utils.rnn.pack_padded_sequence(embedded, lengths, batch_first=False)
         _, hidden = self.gru(pack_embedded)
-        output = self.fc(hidden)[-1].squeeze()
+        output = self.fc(F.relu(hidden))
+        output = torch.squeeze(output, dim=0)
         return output
