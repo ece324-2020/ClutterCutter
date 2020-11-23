@@ -1,13 +1,18 @@
 import torch
 import torch.nn as nn
+import numpy as np
 
 import torchtext
 from torchtext import data
 import spacy
+
 import os
 import pandas as pd
 import csv
+
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+
 import string
 import re 
 
@@ -87,7 +92,7 @@ def strip(df):
 def pre_processing(path):
     data = load_df(path) # Load labelled dataframe
     data = decontracted(data) # Decontract
-    data = strip(data) # Remove 
+    data = strip(data) 
 
     x_tot = data["text"]
     y_tot = data ["label"]
@@ -135,9 +140,9 @@ def make_iter(path, batch_size):
     sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
     
     TEXT.build_vocab(train_data, val_data, test_data)
-    #TEXT.build_vocab(train_data, val_data, test_data, vectors='fasttext.simple.300d') if we use FastText 
+    TEXT.build_vocab(train_data, val_data, test_data, vectors='fasttext.simple.300d')
 
-    TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100)) # Get rid of this line for FastText 
+    # TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100)) # Get rid of this line for FastText 
 
     vocab = TEXT.vocab
 
@@ -174,7 +179,7 @@ def evaluate(model, data_iter):
     batchloss_accum = 0.0
     batchacc_accum = 0.0
     
-    for i,batch in enumerate(data_iter,0): # Go through each batch in data_iter
+    for i,batch in enumerate(data_iter): # Go through each batch in data_iter
         batch_input, batch_input_length = batch.text
         outputs = model(batch_input, batch_input_length)
         
@@ -191,3 +196,14 @@ def evaluate(model, data_iter):
     
     return avgbatchacc, avgbatchloss
     
+def plot_cm(model, data_iter):
+    cm = np.zeros((5, 5))
+    for i, batch in enumerate(data_iter):
+        batch_input, batch_input_length = batch.text
+        outputs = model(batch_input, batch_input_length)
+        _, preds = outputs.max(1)
+        cm += confusion_matrix(batch.label, preds, labels=range(5))
+
+    print("Confusion Matrix")
+    print(cm)
+

@@ -17,6 +17,25 @@ from models import *
 from torchtext.vocab import FastText
 
 def main():
+    torch.manual_seed(0)
+    
+    # Hyperparameters
+    data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data" 
+    batch_size = 20
+    learning_rate = 0.01
+    num_epochs = 10
+    embedding_dim = 300  # (100 for GloVe, 300 for FastText)
+    hidden_dim = 100
+    network = 'rnn' # ['baseline', 'rnn']
+
+    # Incorporate Weights and Biases tracking
+    wandb.init(project="ClutterCutter")
+    wandb.config.update({"epoch": num_epochs, 
+                         "batch_size": batch_size,
+                         "learning_rate": learning_rate,
+                         "architecture": network,
+                         "hidden_dim": hidden_dim})
+
     # Data processing
     reformat_txt(data_path)
     pre_processing(data_path)
@@ -72,54 +91,57 @@ def main():
         model.eval()
         train_acc = running_acc/len(train_iter)
         train_loss = running_loss/len(train_iter)
-        vacc, vloss = evaluate(model, val_iter)
+        val_acc, val_loss = evaluate(model, val_iter)
+        wandb.log({"train_acc": train_acc, 
+                   "train_loss": train_loss,
+                   "val_acc": val_acc,
+                   "val_loss": val_acc})
         
         print(f"Epoch {epoch + 1}/{num_epochs}")
         print("Average Loss: ", train_loss)
         print("Average Accuracy:", train_acc)
-        print("Validation Loss: ", vloss)
-        print("Validation Accuracy: ", vacc)
+        print("Validation Loss: ", val_loss)
+        print("Validation Accuracy: ", val_acc)
+        print("\n")
 
         loss_list.append(train_loss)
         acc_list.append(train_acc)
-        val_acc_list.append(vacc)   
-        val_loss_list.append(vloss)
+        val_acc_list.append(val_acc)   
+        val_loss_list.append(val_loss)
     
     model.eval()
     tacc,tloss = evaluate(model, test_iter)
+    wandb.log({"test_acc": tacc,
+               "test_loss": tloss})
 
     print(f"Final Test Acccuracy: {tacc}")
     print(f"Final Test Loss: {tloss}")
     
     #Plot Losses
+    fig, ax = plt.subplots(figsize=(16, 12))
     plt.plot(nepoch,loss_list, label = 'Train')
     plt.plot(nepoch,val_loss_list, label = 'Valid')
     plt.xlabel("Epoch")
     plt.ylabel("Loss") 
     plt.title("Training and Validation Loss")
     plt.legend(['Training', 'Validation'], loc='upper left')
-    plt.show() 
+    wandb.log({"Loss Curves": wandb.Image(fig)})
 
     #Plot Accuracies
+    fig, ax = plt.subplots(figsize=(16, 12))
     plt.plot(nepoch,acc_list, label = 'Train')
     plt.plot(nepoch,val_acc_list, label = 'Validation')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy") 
     plt.title("Training and Validation Accuracy")
     plt.legend(['Training', 'Validation'], loc='upper left')
-    plt.show() 
+    wandb.log({"Accuracy Curves": wandb.Image(fig)})
+    
+    plot_cm(model, test_iter) # Should make confusion matrix nicer! see  plot_confusion_matrix
+    
+    # Maybe code to save? Early stopping?
 
 if __name__ == '__main__':
-    torch.manual_seed(0)
-    # Move to config object/file!
-    data_path = r"C:\Users\theow\Documents\Eng Sci Courses\Year 3\Fall Semester\ECE324\Project\data"
-    batch_size = 20
-    learning_rate = 0.01
-    num_epochs = 10
-    embedding_dim = 100  # (100 for GloVe, 300 for FastText)
-    hidden_dim = 100
-    network = 'rnn'
-
     main()
 
 
