@@ -27,14 +27,16 @@ def main():
     embedding_dim = 300  # (100 for GloVe, 300 for FastText)
     hidden_dim = 100
     network = 'rnn' # ['baseline', 'rnn']
+    wandb_toggle = True # To enable or disable wandb tracking.
 
     # Incorporate Weights and Biases tracking
-    wandb.init(project="ClutterCutter")
-    wandb.config.update({"epoch": num_epochs, 
-                         "batch_size": batch_size,
-                         "learning_rate": learning_rate,
-                         "architecture": network,
-                         "hidden_dim": hidden_dim})
+    if wandb_toggle:
+        wandb.init(project="ClutterCutter")
+        wandb.config.update({"epoch": num_epochs, 
+                            "batch_size": batch_size,
+                            "learning_rate": learning_rate,
+                            "architecture": network,
+                            "hidden_dim": hidden_dim})
 
     # Data processing
     reformat_txt(data_path)
@@ -92,10 +94,11 @@ def main():
         train_acc = running_acc/len(train_iter)
         train_loss = running_loss/len(train_iter)
         val_acc, val_loss = evaluate(model, val_iter)
-        wandb.log({"train_acc": train_acc, 
-                   "train_loss": train_loss,
-                   "val_acc": val_acc,
-                   "val_loss": val_acc})
+        if wandb_toggle:
+            wandb.log({"train_acc": train_acc, 
+                       "train_loss": train_loss,
+                       "val_acc": val_acc,
+                       "val_loss": val_acc})
         
         print(f"Epoch {epoch + 1}/{num_epochs}")
         print("Average Loss: ", train_loss)
@@ -111,8 +114,9 @@ def main():
     
     model.eval()
     tacc,tloss = evaluate(model, test_iter)
-    wandb.log({"test_acc": tacc,
-               "test_loss": tloss})
+    if wandb_toggle:
+        wandb.log({"test_acc": tacc,
+                   "test_loss": tloss})
 
     print(f"Final Test Acccuracy: {tacc}")
     print(f"Final Test Loss: {tloss}")
@@ -125,7 +129,9 @@ def main():
     plt.ylabel("Loss") 
     plt.title("Training and Validation Loss")
     plt.legend(['Training', 'Validation'], loc='upper left')
-    wandb.log({"Loss Curves": wandb.Image(fig)})
+    plt.show()
+    if wandb_toggle:
+        wandb.log({"Loss Curves": wandb.Image(fig)})
 
     #Plot Accuracies
     fig, ax = plt.subplots(figsize=(16, 12))
@@ -135,7 +141,9 @@ def main():
     plt.ylabel("Accuracy") 
     plt.title("Training and Validation Accuracy")
     plt.legend(['Training', 'Validation'], loc='upper left')
-    wandb.log({"Accuracy Curves": wandb.Image(fig)})
+    plt.show()
+    if wandb_toggle:
+        wandb.log({"Accuracy Curves": wandb.Image(fig)})
     
     plot_cm(model, test_iter) # Should make confusion matrix nicer! see  plot_confusion_matrix
     
