@@ -16,21 +16,6 @@ from sklearn.metrics import confusion_matrix
 import string
 import re 
 
-def decontracted(df):
-    # specific
-    df['text'] = df['text'].str.replace('won\'t', 'will not')
-    df['text'] = df['text'].str.replace('can\'t', 'can not')
-
-    # general
-    df['text'] = df['text'].str.replace('\'t', ' not')
-    df['text'] = df['text'].str.replace('\'re', ' are')
-    df['text'] = df['text'].str.replace('\'s', ' is')
-    df['text'] = df['text'].str.replace('\'d', ' would')
-    df['text'] = df['text'].str.replace('\'ll', ' will')
-    df['text'] = df['text'].str.replace('\'ve', ' have')
-    df['text'] = df['text'].str.replace('\'m', ' am')
-    return df
-
 def reformat_txt(path):
     """
     Combines text files for each data label under one tsv file.
