@@ -52,9 +52,11 @@ def reformat_txt(path):
                         phrase = re.sub(r"\'t", " not", phrase)
                         phrase = re.sub(r"\'ve", " have", phrase)
                         phrase = re.sub(r"\'m", " am", phrase)
+                        phrase = re.sub(r'[^\w\s]', ' ', phrase)
                         phrase = phrase.lower()
+                        phrase.strip('\n')
                         phrase.strip('\t') # removes tabs so content can be stored in tsv format.
-                        phrase = ' '.join([w for w in phrase.split() if len(w) > 2])
+                        phrase = ' '.join([w for w in phrase.split() if len(w) > 2]) # remove words with len <= 2
                         text.append([phrase])
 
         # Merge all text data into one tsv        
@@ -84,14 +86,8 @@ def load_df(path):
     df = df.reset_index(drop=True)
     return df
 
-def strip(df):
-    df['text'] = df['text'].str.replace(r'[^\w\s]+', ' ') # replaces all punctuation with spaces
-    df['text'] = df['text'].str.replace('\n', ' ') # remove new lines
-    return df
-
 def pre_processing(path):
-    data = load_df(path) # Load labelled dataframe
-    data = strip(data) 
+    data = load_df(path) # Load labelled dataframe 
 
     x_tot = data["text"]
     y_tot = data ["label"]
