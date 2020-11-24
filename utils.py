@@ -39,7 +39,6 @@ def reformat_txt(path):
                     file_path = os.path.join(path, dir, file)
                     with open(file_path, 'r', encoding='utf8') as f:
                         phrase = f.read()
-                        phrase = f.read()
                         for n in phrase:
                           if n.isdigit():
                             phrase = phrase.replace(n, "")
@@ -92,7 +91,6 @@ def strip(df):
 
 def pre_processing(path):
     data = load_df(path) # Load labelled dataframe
-    data = decontracted(data) # Decontract
     data = strip(data) 
 
     x_tot = data["text"]
