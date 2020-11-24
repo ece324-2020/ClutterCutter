@@ -40,8 +40,10 @@ def reformat_txt(path):
                     with open(file_path, 'r', encoding='utf8') as f:
                         phrase = f.read()
                         for n in phrase:
+                          n = re.sub(r'[^\w\s]','',n)
                           if n.isdigit():
                             phrase = phrase.replace(n, "")
+                           
                         phrase = re.sub(r"won\'t", "will not", phrase)
                         phrase = re.sub(r"can\'t", "can not", phrase)
                         phrase = re.sub(r"n\'t", " not", phrase)
