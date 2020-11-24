@@ -55,8 +55,7 @@ def reformat_txt(path):
                         phrase = re.sub(r"\'m", " am", phrase)
                         phrase = phrase.lower()
                         phrase.strip('\t') # removes tabs so content can be stored in tsv format.
-                        if len(phrase) > 2:
-                            text.append([phrase])
+                        text.append([phrase])
 
         # Merge all text data into one tsv        
         with open(tsv_path, 'w', encoding='utf8') as f:
