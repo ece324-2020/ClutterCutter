@@ -38,9 +38,25 @@ def reformat_txt(path):
                 if file[-4:] == ".txt":
                     file_path = os.path.join(path, dir, file)
                     with open(file_path, 'r', encoding='utf8') as f:
-                        content = f.read()
-                        content.strip('\t') # removes tabs so content can be stored in tsv format.
-                        text.append([content])
+                        phrase = f.read()
+                        phrase = f.read()
+                        for n in phrase:
+                          if n.isdigit():
+                            phrase = phrase.replace(n, "")
+                        phrase = re.sub(r"won\'t", "will not", phrase)
+                        phrase = re.sub(r"can\'t", "can not", phrase)
+                        phrase = re.sub(r"n\'t", " not", phrase)
+                        phrase = re.sub(r"\'re", " are", phrase)
+                        phrase = re.sub(r"\'s", " is", phrase)
+                        phrase = re.sub(r"\'d", " would", phrase)
+                        phrase = re.sub(r"\'ll", " will", phrase)
+                        phrase = re.sub(r"\'t", " not", phrase)
+                        phrase = re.sub(r"\'ve", " have", phrase)
+                        phrase = re.sub(r"\'m", " am", phrase)
+                        phrase = phrase.lower()
+                        phrase.strip('\t') # removes tabs so content can be stored in tsv format.
+                        if len(phrase) > 2:
+                            text.append([phrase])
 
         # Merge all text data into one tsv        
         with open(tsv_path, 'w', encoding='utf8') as f:
