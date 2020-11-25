@@ -16,6 +16,11 @@ from sklearn.metrics import confusion_matrix
 import string
 import re 
 
+import seaborn as sn
+from sklearn.metrics import confusion_matrix
+
+
+
 def reformat_txt(path):
     """
     Combines text files for each data label under one tsv file.
@@ -207,4 +212,17 @@ def plot_cm(model, data_iter):
 
     print("Confusion Matrix")
     print(cm)
+    
+def plot_cm_final:
+    for i, batch in enumerate(data_iter):
+        batch_input, batch_input_length = batch.text
+        outputs = model(batch_input, batch_input_length)
+        _, preds = outputs.max(1)
+        matrix += confusion_matrix(batch.label,preds) 
+    
+        classes = ['Academics', 'Alerts', 'Personal', 'Professional','Promotions and Events']
+        cm = pd.DataFrame(matrix, index = [i for i in classes], columns = [c for c in classes])
+        sn.heatmap(cm, annot=True)
+        plt.show()
+    
 
