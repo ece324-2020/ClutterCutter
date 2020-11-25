@@ -19,8 +19,6 @@ import re
 import seaborn as sn
 from sklearn.metrics import confusion_matrix
 
-
-
 def reformat_txt(path):
     """
     Combines text files for each data label under one tsv file.
@@ -223,7 +221,5 @@ def plot_cm_final(model,data_iter):
     
     classes = ['Academics', 'Alerts', 'Personal', 'Professional','Promotions and Events']
     cm = pd.DataFrame(matrix, index = [i for i in classes], columns = [c for c in classes])
-    sn.heatmap(cm, annot=True)
-    plt.show()
-    
+    sn.heatmap(cm, annot=True)    
 
