@@ -213,17 +213,17 @@ def plot_cm(model, data_iter):
     print("Confusion Matrix")
     print(cm)
 
-#ignore for now, still testing
 def plot_cm_final(model,data_iter):
+    matrix = np.zeros((5, 5))
     for i, batch in enumerate(data_iter):
         batch_input, batch_input_length = batch.text
         outputs = model(batch_input, batch_input_length)
         _, preds = outputs.max(1)
-        matrix += confusion_matrix(batch.label,preds) 
+        matrix += confusion_matrix(batch.label,preds,labels=range(5)) 
     
-        classes = ['Academics', 'Alerts', 'Personal', 'Professional','Promotions and Events']
-        cm = pd.DataFrame(matrix, index = [i for i in classes], columns = [c for c in classes])
-        sn.heatmap(cm, annot=True)
-        plt.show()
+    classes = ['Academics', 'Alerts', 'Personal', 'Professional','Promotions and Events']
+    cm = pd.DataFrame(matrix, index = [i for i in classes], columns = [c for c in classes])
+    sn.heatmap(cm, annot=True)
+    plt.show()
     
 
