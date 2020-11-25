@@ -145,7 +145,8 @@ def main():
     if wandb_toggle:
         wandb.log({"Accuracy Curves": wandb.Image(fig)})
     
-    plot_cm(model, test_iter) # Should make confusion matrix nicer! see  plot_confusion_matrix
+    #plot_cm(model, test_iter) # Should make confusion matrix nicer! see  plot_confusion_matrix
+    plot_cm_final(model, test_iter) # Nicer matrix 
     
     # Maybe code to save? Early stopping?
 
