@@ -16,6 +16,9 @@ from sklearn.metrics import confusion_matrix
 import string
 import re 
 
+import seaborn as sn
+from sklearn.metrics import confusion_matrix
+
 def reformat_txt(path):
     """
     Combines text files for each data label under one tsv file.
@@ -40,8 +43,10 @@ def reformat_txt(path):
                     with open(file_path, 'r', encoding='utf8') as f:
                         phrase = f.read()
                         for n in phrase:
+                          n = re.sub(r'[^\w\s]','',n)
                           if n.isdigit():
                             phrase = phrase.replace(n, "")
+                           
                         phrase = re.sub(r"won\'t", "will not", phrase)
                         phrase = re.sub(r"can\'t", "can not", phrase)
                         phrase = re.sub(r"n\'t", " not", phrase)
@@ -201,4 +206,16 @@ def plot_cm(model, data_iter):
 
     print("Confusion Matrix")
     print(cm)
+
+def plot_cm_final(model,data_iter):
+    matrix = np.zeros((5, 5))
+    for i, batch in enumerate(data_iter):
+        batch_input, batch_input_length = batch.text
+        outputs = model(batch_input, batch_input_length)
+        _, preds = outputs.max(1)
+        matrix += confusion_matrix(batch.label,preds,labels=range(5)) 
+    
+    classes = ['Academics', 'Alerts', 'Personal', 'Professional','Promotions and Events']
+    cm = pd.DataFrame(matrix, index = [i for i in classes], columns = [c for c in classes])
+    sn.heatmap(cm, annot=True)    
 
