@@ -43,7 +43,6 @@ def reformat_txt(path):
                     with open(file_path, 'r', encoding='utf8') as f:
                         phrase = f.read()
                         for n in phrase:
-                          n = re.sub(r'[^\w\s]','',n)
                           if n.isdigit():
                             phrase = phrase.replace(n, "")
                            
@@ -58,6 +57,7 @@ def reformat_txt(path):
                         phrase = re.sub(r"\'ve", " have", phrase)
                         phrase = re.sub(r"\'m", " am", phrase)
                         phrase = re.sub(r'[^\w\s]', ' ', phrase)
+                        phrase = re.sub(' +', ' ', phrase)
                         phrase = phrase.lower()
                         phrase.strip('\n')
                         phrase.strip('\t') # removes tabs so content can be stored in tsv format.
@@ -196,17 +196,6 @@ def evaluate(model, data_iter):
     
     return avgbatchacc, avgbatchloss
     
-def plot_cm(model, data_iter):
-    cm = np.zeros((5, 5))
-    for i, batch in enumerate(data_iter):
-        batch_input, batch_input_length = batch.text
-        outputs = model(batch_input, batch_input_length)
-        _, preds = outputs.max(1)
-        cm += confusion_matrix(batch.label, preds, labels=range(5))
-
-    print("Confusion Matrix")
-    print(cm)
-
 def plot_cm_final(model,data_iter):
     matrix = np.zeros((5, 5))
     for i, batch in enumerate(data_iter):
