@@ -19,21 +19,6 @@ import re
 import seaborn as sn
 from sklearn.metrics import confusion_matrix
 
-from googletrans import Translator
-
-import os
-from zipfile import ZipFile
-from itertools import chain
-from glob import glob
-import re
-
-#import os
-import random
-#import csv
-
-import nltk
-from nltk.corpus import wordnet
-
 def reformat_txt(path):
     """
     Combines text files for each data label under one tsv file.
@@ -88,7 +73,6 @@ def reformat_txt(path):
 def load_df(path):
     """
     Creates a Pandas Dataframe from the text.tsv file containing text data.
-
     Returns Dataframe object with the proper labels assigned to each piece of text.
     """
     labels = {'Academics': 0, 'Alerts': 1, 
@@ -221,132 +205,4 @@ def plot_cm_final(model,data_iter):
     
     classes = ['Academics', 'Alerts', 'Personal', 'Professional','Promotions and Events']
     cm = pd.DataFrame(matrix, index = [i for i in classes], columns = [c for c in classes])
-    sn.heatmap(cm, annot=True)    
-    
-def decontracted(phrase): 
-    """
-    "Cleaning": Undoing contractions (e.g. can't --> can not)
-    """
-    # there could be cases I didn't think of. Feel free to add more
-    # specific
-    phrase = re.sub(r"won\'t", "will not", phrase)
-    phrase = re.sub(r"can\'t", "can not", phrase)
-
-    # general
-    phrase = re.sub(r"n\'t", " not", phrase)
-    phrase = re.sub(r"\'re", " are", phrase)
-    phrase = re.sub(r"\'s", " is", phrase)
-    phrase = re.sub(r"\'d", " would", phrase)
-    phrase = re.sub(r"\'ll", " will", phrase)
-    phrase = re.sub(r"\'t", " not", phrase)
-    phrase = re.sub(r"\'ve", " have", phrase)
-    phrase = re.sub(r"\'m", " am", phrase)
-    return phrase
-
-def backtrans(directory): # !pip install googletrans in main 
-    """
-    Data augmentation (our English sample --> translate --> translate back) 
-    """
-    for filename in os.listdir(directory):
-        if filename.endswith(".txt") and not filename.startswith("a"):
-            f = open(directory + filename, 'r')
-            f = f.read()
-            translator = Translator()
-            try:
-                # back translation to French
-                imt = translator.translate(f, src='en',dest = 'fr')
-                imt_text = imt.text
-                result = translator.translate(imt.text,src='fr',dest = 'en')
-                result_text = result.text
-
-                with open(directory + "a_fr_" + filename, 'w') as out:
-                    out.writelines(result_text)
-            except:
-                try: 
-                    # back translation to German
-                    imt = translator.translate(f, src='en',dest = 'de')
-                    imt_text = imt.text
-                    result = translator.translate(imt.text,src='de',dest = 'en')
-                    result_text = result.text
-
-                    with open(directory + "a_de_" + filename, 'w') as out:
-                        out.writelines(result_text)
-                except: 
-                    with open(directory + filename, 'w') as out:
-                        out.writelines(f)
-
-    for filename in os.listdir(directory):
-        if filename.endswith(".txt") and not filename.startswith("a"):
-            f = open(directory + filename, 'r')
-            f = f.read()
-            translator = Translator()
-            try:
-                # back translation to Korean
-                imt = translator.translate(f, src='en',dest = 'ko')
-                imt_text = imt.text
-                result = translator.translate(imt.text,src='ko',dest = 'en')
-                result_text = result.text
-
-
-                with open(directory + "a_ko_" + filename, 'w') as out:
-                    out.writelines(result_text)
-            except:
-                try: 
-                    # back translation to Japanese
-                    imt = translator.translate(f, src='en',dest = 'ja')
-                    imt_text = imt.text
-                    result = translator.translate(imt.text,src='ja',dest = 'en')
-                    result_text = result.text
-
-
-                    with open(directory + "a_ja_" + filename, 'w') as out:
-                        out.writelines(result_text)
-                except: 
-                    with open(directory + filename, 'w') as out:
-                        out.writelines(f)
-                         
-def lexical_sub(directory, replace=0.1, sample=0.35): # !pip install nltk in main 
-    """
-    Data augmentation (Applies lexical substitution on a set of words in randomly picked txt files. Input directory should correspond to 
-    the class-labelled folders in which the raw txt data is being stored. replace gives proportion of words to replace)
-    """
-    prefix = 'lex_'
-    for file in os.listdir(directory):
-        # Augment <sample> proportion of data
-        if random.random() < sample:
-            if file.endswith(".txt") and not file.startswith(prefix):
-                text = []
-                lines = open(os.path.join(directory, file), 'r', encoding='utf8').readlines()
-                for line in lines:
-                    line = line.replace("\n", "")
-                    words = line.split()
-                    if words:
-                        random_words = words.copy()
-                        random_words = [word for word in random_words if len(word) > 2]
-                        random.shuffle(random_words)
-
-                        replace_num = len(random_words) * replace
-                        num_replaced = 0
-                        for random_word in random_words:
-                            synonyms = set()
-                            for syn in wordnet.synsets(random_word): 
-                                for l in syn.lemmas(): 
-                                    synonym = l.name().replace("_", " ").replace("-", " ").lower()
-                                    synonyms.add(synonym)
-                            if random_word in synonyms:
-                                synonyms.remove(random_word)
-                            if synonyms:
-                                synonym = random.choice(list(synonyms))
-                                words = [synonym if word == random_word else word for word in words]
-                                num_replaced += 1
-                            if num_replaced >= replace_num:
-                                break
-
-                    new_line = ' '.join(words)
-                    text.append([new_line])
-                with open(os.path.join(directory, prefix + file), 'w', encoding='utf8') as f:
-                    writer = csv.writer(f)
-                    writer.writerows(text) 
-        break
-        
-                        
+    sn.heatmap(cm, annot=True)  
