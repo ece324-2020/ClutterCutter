@@ -27,11 +27,7 @@ def main():
                             "learning_rate": learning_rate,
                             "architecture": network,
                             "hidden_dim": hidden_dim}, allow_val_change=True)
-
-    # Data processing
-    if os.path.exists(os.path.join(data_path, 'train.tsv')):
-        reformat_txt(data_path)
-        pre_processing(data_path)
+        
     train_iter, val_iter, test_iter, vocab = make_iter(data_path, batch_size)
 
     # Initiate model 
